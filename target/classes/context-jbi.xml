@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+
+	<bean id="jbi" class="org.apache.servicemix.jbi.container.SpringJBIContainer">
+		<property name="embedded" value="true" />
+		<property name="activationSpecs">
+			<list>
+				<ref bean="activationSpecFileSender"/>
+				<ref bean="activationSpecFilePoller"/>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="activationSpecFileSender" class="org.apache.servicemix.jbi.container.ActivationSpec">
+		<property name="componentName" value="fileSender" />
+		<property name="service" ref="fileSenderService" />
+		<property name="component">
+			<bean class="org.apache.servicemix.components.file.FileWriter">
+				<property name="directory" value="${OUTBOX}" />
+				<property name="marshaler">
+					<bean class="org.apache.servicemix.components.util.DefaultFileMarshaler">
+						<property name="fileName">
+							<bean
+								class="org.apache.servicemix.expression.JaxenStringXPathExpression">
+								<constructor-arg value="concat('sample_', /sample/@id, '.xml')" />
+							</bean>
+						</property>
+					</bean>
+				</property>
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="activationSpecFilePoller" class="org.apache.servicemix.jbi.container.ActivationSpec">
+		<property name="componentName" value="filePoller" />
+		<property name="destinationService" ref="fileSenderService" />
+		<property name="service" ref="filePollerService" />
+		<property name="component">
+			<bean class="org.apache.servicemix.components.file.FilePoller">
+				<property name="file" value="${INBOX}" />
+				<property name="period" value="3000" />
+			</bean>
+		</property>
+	</bean>
+
+   <bean id="fileSenderService" class="javax.xml.namespace.QName">
+       <constructor-arg value="fileSender"/>
+   </bean>
+   
+   <bean id="filePollerService" class="javax.xml.namespace.QName">
+       <constructor-arg value="filePoller"/>
+   </bean>
+
+
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="classpath:rutas.properties" />
+	</bean>
+	
+</beans>
